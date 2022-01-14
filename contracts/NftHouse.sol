@@ -10,26 +10,30 @@ contract NftHouse is TradeableCashflow {
     Counters.Counter private _tokenIdTracker;
 
     struct HouseInfo {
-        uint256 tokenId;
         address owner;
+        uint256 tokenId;
         uint256 numberOfRenters;
+        uint256 numberOfCurrentRenter;
         uint256 rentPrice;
         uint256 sellingPrice; // if equal zero the house is not for sale
     }
 
     HouseInfo[] public houses;
 
-    mapping(address => HouseInfo) public isOwner;
+    mapping(uint256 => HouseInfo) public tokenIdToHouse;
     mapping(address => HouseInfo) public isRenter;
     mapping(address => uint256) public lastTimePaid;
 
     event HouseMinted(
-        address indexed _owner,
-        uint256 indexed _tokenId,
+        address indexed owner,
+        uint256 indexed tokenId,
         string tokenUri,
-        uint256 _rentPrice,
-        uint256 _sellingPrice
+        uint256 numberOfRenters,
+        uint256 rentPrice,
+        uint256 sellingPrice
     );
+
+    event PayRent(address indexed renter, uint256 indexed tokenId, uint256 paymentDay, uint256 rentPrice);
 
     constructor(
         string memory _name,
@@ -52,16 +56,40 @@ contract NftHouse is TradeableCashflow {
             tokenId: _tokenIdTracker.current(),
             owner: _msgSender(),
             numberOfRenters: numberOfRenters,
+            numberOfCurrentRenter: 0,
             rentPrice: rentPrice,
             sellingPrice: sellingPrice
         });
 
         houses.push(house);
-        isOwner[_msgSender()] = house;
+        tokenIdToHouse[_tokenIdTracker.current()] = house;
 
-        emit HouseMinted(_msgSender(), _tokenIdTracker.current(), tokenUri, rentPrice, sellingPrice);
+        emit HouseMinted(_msgSender(), _tokenIdTracker.current(), tokenUri, numberOfRenters, rentPrice, sellingPrice);
 
         _tokenIdTracker.increment();
         return _tokenIdTracker.current();
+    }
+
+    function payRent(uint256 tokenId, uint256 rentAmount) external {
+        HouseInfo memory house = tokenIdToHouse[tokenId];
+        bool _isRenter = isRenter[_msgSender()].tokenId == house.tokenId;
+        require(
+            house.numberOfRenters == house.numberOfCurrentRenter && _isRenter,
+            'You are not a renter of this house'
+        );
+
+        require(house.rentPrice == rentAmount, 'You have to pay the same amount as the rent price');
+
+        require(lastTimePaid[_msgSender()] + 30 days < block.timestamp, 'You have already paid this month rent');
+
+        // Should add flow here!
+
+        if (!_isRenter) {
+            tokenIdToHouse[tokenId].numberOfCurrentRenter++;
+            isRenter[_msgSender()] = tokenIdToHouse[tokenId];
+        }
+
+        lastTimePaid[_msgSender()] = block.timestamp;
+        PayRent(_msgSender(), tokenId, block.timestamp, rentAmount);
     }
 }
