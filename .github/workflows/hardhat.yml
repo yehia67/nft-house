@@ -29,10 +29,6 @@ jobs:
     - run: yarn
     - name: Compile Smart Contract
       run: npx hardhat compile
-    - name: Unit testcases 
-      run: npx hardhat test
-    - name: smart-contract coverage 
-      run: npx hardhat coverage
     - name: linting
       run: npx prettier  --write 'contracts/**/*.sol' 
 
