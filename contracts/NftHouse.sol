@@ -71,14 +71,13 @@ contract NftHouse is TradeableCashflow {
     }
 
     function payRent(uint256 tokenId, uint256 rentAmount) external {
-        HouseInfo memory house = tokenIdToHouse[tokenId];
-        bool _isRenter = isRenter[_msgSender()].tokenId == house.tokenId;
+        bool _isRenter = isRenter[_msgSender()].tokenId == tokenIdToHouse[tokenId].tokenId;
         require(
-            house.numberOfRenters == house.numberOfCurrentRenter && _isRenter,
+            tokenIdToHouse[tokenId].numberOfRenters == tokenIdToHouse[tokenId].numberOfCurrentRenter && _isRenter,
             'You are not a renter of this house'
         );
 
-        require(house.rentPrice == rentAmount, 'You have to pay the same amount as the rent price');
+        require(tokenIdToHouse[tokenId].rentPrice == rentAmount, 'You have to pay the same amount as the rent price');
 
         require(lastTimePaid[_msgSender()] + 30 days < block.timestamp, 'You have already paid this month rent');
 
@@ -91,5 +90,19 @@ contract NftHouse is TradeableCashflow {
 
         lastTimePaid[_msgSender()] = block.timestamp;
         PayRent(_msgSender(), tokenId, block.timestamp, rentAmount);
+    }
+
+    function buy(uint256 tokenId, uint256 amountToPay) external {
+        require(tokenIdToHouse[tokenId].sellingPrice == amountToPay, 'You have to pay the same amount as the selling price');
+        require(tokenIdToHouse[tokenId].sellingPrice != 0, 'This house is not for sale');
+        // Should add flow here!
+        tokenIdToHouse[tokenId].owner = _msgSender();
+        tokenIdToHouse[tokenId].sellingPrice = 0;
+    }
+
+    function sell(uint256 tokenId, uint256 sellingPrice) external {
+        require(tokenIdToHouse[tokenId].owner != _msgSender(), 'You are not the owner');
+        // Should add flow here!
+        tokenIdToHouse[tokenId].sellingPrice = sellingPrice;
     }
 }
