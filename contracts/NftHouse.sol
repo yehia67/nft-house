@@ -93,7 +93,10 @@ contract NftHouse is TradeableCashflow {
     }
 
     function buy(uint256 tokenId, uint256 amountToPay) external {
-        require(tokenIdToHouse[tokenId].sellingPrice == amountToPay, 'You have to pay the same amount as the selling price');
+        require(
+            tokenIdToHouse[tokenId].sellingPrice == amountToPay,
+            'You have to pay the same amount as the selling price'
+        );
         require(tokenIdToHouse[tokenId].sellingPrice != 0, 'This house is not for sale');
         // Should add flow here!
         tokenIdToHouse[tokenId].owner = _msgSender();

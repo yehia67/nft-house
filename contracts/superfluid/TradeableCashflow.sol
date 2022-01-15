@@ -12,8 +12,7 @@ contract TradeableCashflow is ERC721, RedirectAll {
         ISuperfluid host,
         IConstantFlowAgreementV1 cfa,
         ISuperToken acceptedToken
-    ) ERC721(_name, _symbol) RedirectAll(host, cfa, acceptedToken, owner) {
-    }
+    ) ERC721(_name, _symbol) RedirectAll(host, cfa, acceptedToken, owner) {}
 
     //now I will insert a nice little hook in the _transfer, including the RedirectAll function I need
     function _beforeTokenTransfer(

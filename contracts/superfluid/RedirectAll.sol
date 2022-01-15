@@ -2,11 +2,11 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import {ISuperfluid, ISuperToken, ISuperApp, ISuperAgreement, SuperAppDefinitions} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol"; //"@superfluid-finance/ethereum-monorepo/packages/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import {ISuperfluid, ISuperToken, ISuperApp, ISuperAgreement, SuperAppDefinitions} from '@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol'; //"@superfluid-finance/ethereum-monorepo/packages/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
-import {IConstantFlowAgreementV1} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol";
+import {IConstantFlowAgreementV1} from '@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol';
 
-import {SuperAppBase} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
+import {SuperAppBase} from '@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol';
 
 contract RedirectAll is SuperAppBase {
     ISuperfluid private _host; // host
@@ -20,14 +20,11 @@ contract RedirectAll is SuperAppBase {
         ISuperToken acceptedToken,
         address receiver
     ) {
-        require(address(host) != address(0), "host is zero address");
-        require(address(cfa) != address(0), "cfa is zero address");
-        require(
-            address(acceptedToken) != address(0),
-            "acceptedToken is zero address"
-        );
-        require(address(receiver) != address(0), "receiver is zero address");
-        require(!host.isApp(ISuperApp(receiver)), "receiver is an app");
+        require(address(host) != address(0), 'host is zero address');
+        require(address(cfa) != address(0), 'cfa is zero address');
+        require(address(acceptedToken) != address(0), 'acceptedToken is zero address');
+        require(address(receiver) != address(0), 'receiver is zero address');
+        require(!host.isApp(ISuperApp(receiver)), 'receiver is an app');
 
         _host = host;
         _cfa = cfa;
@@ -56,11 +53,7 @@ contract RedirectAll is SuperAppBase {
         )
     {
         if (_receiver != address(0)) {
-            (startTime, flowRate, , ) = _cfa.getFlow(
-                _acceptedToken,
-                address(this),
-                _receiver
-            );
+            (startTime, flowRate, , ) = _cfa.getFlow(_acceptedToken, address(this), _receiver);
             receiver = _receiver;
         }
     }
@@ -68,18 +61,11 @@ contract RedirectAll is SuperAppBase {
     event ReceiverChanged(address receiver); //what is this?
 
     /// @dev If a new stream is opened, or an existing one is opened
-    function _updateOutflow(bytes calldata ctx)
-        private
-        returns (bytes memory newCtx)
-    {
+    function _updateOutflow(bytes calldata ctx) private returns (bytes memory newCtx) {
         newCtx = ctx;
         // @dev This will give me the new flowRate, as it is called in after callbacks
         int96 netFlowRate = _cfa.getNetFlow(_acceptedToken, address(this));
-        (, int96 outFlowRate, , ) = _cfa.getFlow(
-            _acceptedToken,
-            address(this),
-            _receiver
-        ); // CHECK: unclear what happens if flow doesn't exist.
+        (, int96 outFlowRate, , ) = _cfa.getFlow(_acceptedToken, address(this), _receiver); // CHECK: unclear what happens if flow doesn't exist.
         int96 inFlowRate = netFlowRate + outFlowRate;
 
         // @dev If inFlowRate === 0, then delete existing flow.
@@ -94,7 +80,7 @@ contract RedirectAll is SuperAppBase {
                     _receiver,
                     new bytes(0) // placeholder
                 ),
-                "0x",
+                '0x',
                 newCtx
             );
         } else if (outFlowRate != int96(0)) {
@@ -107,7 +93,7 @@ contract RedirectAll is SuperAppBase {
                     inFlowRate,
                     new bytes(0) // placeholder
                 ),
-                "0x",
+                '0x',
                 newCtx
             );
         } else {
@@ -121,7 +107,7 @@ contract RedirectAll is SuperAppBase {
                     inFlowRate,
                     new bytes(0) // placeholder
                 ),
-                "0x",
+                '0x',
                 newCtx
             );
         }
@@ -129,19 +115,12 @@ contract RedirectAll is SuperAppBase {
 
     // @dev Change the Receiver of the total flow
     function _changeReceiver(address newReceiver) internal {
-        require(newReceiver != address(0), "New receiver is zero address");
+        require(newReceiver != address(0), 'New receiver is zero address');
         // @dev because our app is registered as final, we can't take downstream apps
-        require(
-            !_host.isApp(ISuperApp(newReceiver)),
-            "New receiver can not be a superApp"
-        );
+        require(!_host.isApp(ISuperApp(newReceiver)), 'New receiver can not be a superApp');
         if (newReceiver == _receiver) return;
         // @dev delete flow to old receiver
-        (, int96 outFlowRate, , ) = _cfa.getFlow(
-            _acceptedToken,
-            address(this),
-            _receiver
-        ); //CHECK: unclear what happens if flow doesn't exist.
+        (, int96 outFlowRate, , ) = _cfa.getFlow(_acceptedToken, address(this), _receiver); //CHECK: unclear what happens if flow doesn't exist.
         if (outFlowRate > 0) {
             _host.callAgreement(
                 _cfa,
@@ -152,7 +131,7 @@ contract RedirectAll is SuperAppBase {
                     _receiver,
                     new bytes(0)
                 ),
-                "0x"
+                '0x'
             );
             // @dev create flow to new receiver
             _host.callAgreement(
@@ -164,7 +143,7 @@ contract RedirectAll is SuperAppBase {
                     _cfa.getNetFlow(_acceptedToken, address(this)),
                     new bytes(0)
                 ),
-                "0x"
+                '0x'
             );
         }
         // @dev set global receiver to new receiver
@@ -184,13 +163,7 @@ contract RedirectAll is SuperAppBase {
         bytes calldata, /*_agreementData*/
         bytes calldata, // _cbdata,
         bytes calldata _ctx
-    )
-        external
-        override
-        onlyExpected(_superToken, _agreementClass)
-        onlyHost
-        returns (bytes memory newCtx)
-    {
+    ) external override onlyExpected(_superToken, _agreementClass) onlyHost returns (bytes memory newCtx) {
         return _updateOutflow(_ctx);
     }
 
@@ -201,13 +174,7 @@ contract RedirectAll is SuperAppBase {
         bytes calldata agreementData,
         bytes calldata, //_cbdata,
         bytes calldata _ctx
-    )
-        external
-        override
-        onlyExpected(_superToken, _agreementClass)
-        onlyHost
-        returns (bytes memory newCtx)
-    {
+    ) external override onlyExpected(_superToken, _agreementClass) onlyHost returns (bytes memory newCtx) {
         return _updateOutflow(_ctx);
     }
 
@@ -220,8 +187,7 @@ contract RedirectAll is SuperAppBase {
         bytes calldata _ctx
     ) external override onlyHost returns (bytes memory newCtx) {
         // According to the app basic law, we should never revert in a termination callback
-        if (!_isSameToken(_superToken) || !_isCFAv1(_agreementClass))
-            return _ctx;
+        if (!_isSameToken(_superToken) || !_isCFAv1(_agreementClass)) return _ctx;
         return _updateOutflow(_ctx);
     }
 
@@ -232,22 +198,17 @@ contract RedirectAll is SuperAppBase {
     function _isCFAv1(address agreementClass) private view returns (bool) {
         return
             ISuperAgreement(agreementClass).agreementType() ==
-            keccak256(
-                "org.superfluid-finance.agreements.ConstantFlowAgreement.v1"
-            );
+            keccak256('org.superfluid-finance.agreements.ConstantFlowAgreement.v1');
     }
 
     modifier onlyHost() {
-        require(
-            msg.sender == address(_host),
-            "RedirectAll: support only one host"
-        );
+        require(msg.sender == address(_host), 'RedirectAll: support only one host');
         _;
     }
 
     modifier onlyExpected(ISuperToken superToken, address agreementClass) {
-        require(_isSameToken(superToken), "RedirectAll: not accepted token");
-        require(_isCFAv1(agreementClass), "RedirectAll: only CFAv1 supported");
+        require(_isSameToken(superToken), 'RedirectAll: not accepted token');
+        require(_isCFAv1(agreementClass), 'RedirectAll: only CFAv1 supported');
         _;
     }
 }
