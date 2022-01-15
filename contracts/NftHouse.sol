@@ -109,7 +109,6 @@ contract NftHouse is ERC721 {
 
     function sell(uint256 tokenId, uint256 sellingPrice) external {
         require(tokenIdToHouse[tokenId].owner != _msgSender(), 'You are not the owner');
-        // Should add flow here!
         tokenIdToHouse[tokenId].sellingPrice = sellingPrice;
     }
 }
