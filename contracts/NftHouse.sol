@@ -1,10 +1,13 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.7.6;
 
-import './superfluid/TradeableCashflow.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
 
-contract NftHouse is TradeableCashflow {
+import {ERC721} from '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+
+contract NftHouse is ERC721 {
+    using Address for address payable;
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdTracker;
@@ -35,13 +38,7 @@ contract NftHouse is TradeableCashflow {
 
     event PayRent(address indexed renter, uint256 indexed tokenId, uint256 paymentDay, uint256 rentPrice);
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        ISuperfluid host,
-        IConstantFlowAgreementV1 cfa,
-        ISuperToken acceptedToken
-    ) TradeableCashflow(_msgSender(), _name, _symbol, host, cfa, acceptedToken) {}
+    constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
     function mintHouse(
         string memory tokenUri,
@@ -81,7 +78,7 @@ contract NftHouse is TradeableCashflow {
 
         require(lastTimePaid[_msgSender()] + 30 days < block.timestamp, 'You have already paid this month rent');
 
-        // Should add flow here!
+        payable(tokenIdToHouse[tokenId].owner).transfer(rentAmount);
 
         if (!_isRenter) {
             tokenIdToHouse[tokenId].numberOfCurrentRenter++;
@@ -93,12 +90,19 @@ contract NftHouse is TradeableCashflow {
     }
 
     function buy(uint256 tokenId, uint256 amountToPay) external {
+        require(tokenIdToHouse[tokenId].sellingPrice != 0, 'This house is not for sale');
+
         require(
             tokenIdToHouse[tokenId].sellingPrice == amountToPay,
             'You have to pay the same amount as the selling price'
         );
-        require(tokenIdToHouse[tokenId].sellingPrice != 0, 'This house is not for sale');
-        // Should add flow here!
+
+        payable(tokenIdToHouse[tokenId].owner).transfer(amountToPay);
+
+        // user must approve transfer ERC721 first
+
+        this.safeTransferFrom(tokenIdToHouse[tokenId].owner, _msgSender(), tokenId);
+
         tokenIdToHouse[tokenId].owner = _msgSender();
         tokenIdToHouse[tokenId].sellingPrice = 0;
     }
