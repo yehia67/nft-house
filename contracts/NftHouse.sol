@@ -70,8 +70,8 @@ contract NftHouse is ERC721 {
     function payRent(uint256 tokenId) external payable {
         bool _isRenter = isRenter[_msgSender()].tokenId == tokenIdToHouse[tokenId].tokenId;
         require(
-            tokenIdToHouse[tokenId].numberOfRenters == tokenIdToHouse[tokenId].numberOfCurrentRenter && _isRenter,
-            'You are not a renter of this house'
+            _isRenter || tokenIdToHouse[tokenId].numberOfRenters != tokenIdToHouse[tokenId].numberOfCurrentRenter,
+            'You are not a renter for this house'
         );
 
         require(tokenIdToHouse[tokenId].rentPrice == msg.value, 'You have to pay the same amount as the rent price');
