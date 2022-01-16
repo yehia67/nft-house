@@ -67,18 +67,18 @@ contract NftHouse is ERC721 {
         return _tokenIdTracker.current();
     }
 
-    function payRent(uint256 tokenId, uint256 rentAmount) external {
+    function payRent(uint256 tokenId) external payable {
         bool _isRenter = isRenter[_msgSender()].tokenId == tokenIdToHouse[tokenId].tokenId;
         require(
             tokenIdToHouse[tokenId].numberOfRenters == tokenIdToHouse[tokenId].numberOfCurrentRenter && _isRenter,
             'You are not a renter of this house'
         );
 
-        require(tokenIdToHouse[tokenId].rentPrice == rentAmount, 'You have to pay the same amount as the rent price');
+        require(tokenIdToHouse[tokenId].rentPrice == msg.value, 'You have to pay the same amount as the rent price');
 
         require(lastTimePaid[_msgSender()] + 30 days < block.timestamp, 'You have already paid this month rent');
 
-        payable(tokenIdToHouse[tokenId].owner).transfer(rentAmount);
+        payable(tokenIdToHouse[tokenId].owner).transfer(msg.value);
 
         if (!_isRenter) {
             tokenIdToHouse[tokenId].numberOfCurrentRenter++;
@@ -86,18 +86,18 @@ contract NftHouse is ERC721 {
         }
 
         lastTimePaid[_msgSender()] = block.timestamp;
-        PayRent(_msgSender(), tokenId, block.timestamp, rentAmount);
+        PayRent(_msgSender(), tokenId, block.timestamp, msg.value);
     }
 
-    function buy(uint256 tokenId, uint256 amountToPay) external {
+    function buy(uint256 tokenId) external payable {
         require(tokenIdToHouse[tokenId].sellingPrice != 0, 'This house is not for sale');
 
         require(
-            tokenIdToHouse[tokenId].sellingPrice == amountToPay,
+            tokenIdToHouse[tokenId].sellingPrice == msg.value,
             'You have to pay the same amount as the selling price'
         );
 
-        payable(tokenIdToHouse[tokenId].owner).transfer(amountToPay);
+        payable(tokenIdToHouse[tokenId].owner).transfer(msg.value);
 
         // user must approve transfer ERC721 first
 
@@ -107,8 +107,36 @@ contract NftHouse is ERC721 {
         tokenIdToHouse[tokenId].sellingPrice = 0;
     }
 
-    function sell(uint256 tokenId, uint256 sellingPrice) external {
-        require(tokenIdToHouse[tokenId].owner != _msgSender(), 'You are not the owner');
+    function sell(uint256 tokenId, uint256 sellingPrice) external payable {
+        require(tokenIdToHouse[tokenId].owner == _msgSender(), 'You are not the owner');
         tokenIdToHouse[tokenId].sellingPrice = sellingPrice;
+    }
+
+    function getHouseByTokenId(uint256 tokenId)
+        public
+        view
+        returns (
+            address,
+            uint256,
+            string memory,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return (
+            tokenIdToHouse[tokenId].owner,
+            tokenIdToHouse[tokenId].tokenId,
+            this.tokenURI(tokenId),
+            tokenIdToHouse[tokenId].numberOfRenters,
+            tokenIdToHouse[tokenId].numberOfCurrentRenter,
+            tokenIdToHouse[tokenId].rentPrice,
+            tokenIdToHouse[tokenId].sellingPrice
+        );
+    }
+
+    function getHousesCount() external view returns (uint256) {
+        return houses.length;
     }
 }
