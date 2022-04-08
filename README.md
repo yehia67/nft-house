@@ -1,5 +1,5 @@
 # NFT House
-NFT house is a platform that support renting NFT to get some passive income by only holding your NFT. It work on ERC721 protocol only but soon will support ERC1155. This is just a proof of concept were user have to transfer the ownership to the contract in order to rent the NFT. The deployment version will override some transactions on ERC721 and ERC1155 so renter can use the NFT for some time before returning it to the owner.
+NFT House is a platform that supports renting NFT to get some passive income by only holding your NFT. It works on the ERC721 protocol only but soon will help ERC1155. This is just a proof of concept where the user has to transfer the ownership to the contract to rent the NFT. The deployment version will override some transactions on ERC721 and ERC1155 so the renter can use the NFT for some time before returning it to the owner.
 
 ## How To Use
 This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
