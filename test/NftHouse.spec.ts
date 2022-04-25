@@ -41,6 +41,17 @@ describe('Rent house for two people', () => {
     )
   })
 
+  it('User one should not pay for the same month twice', async () => {
+    await expect(rentContract.connect(user1).payRent(0, { value: rentPrice })).to.be.revertedWith(
+      'You have already paid this month rent'
+    )
+  })
+
+  it('User one should pay rent after one month', async () => {
+    await provider.send('evm_increaseTime', [60 * 60 * 24 * 30])
+    await provider.send('evm_mine', [])
+    await expect(rentContract.connect(user1).payRent(0, { value: rentPrice })).to.emit(rentContract, 'PayRent')
+  })
   it('Owner should offer his house for sale', async () => {
     const sellPrice = parseEther('1')
     await rentContract.approve(rentContract.address, 0)
