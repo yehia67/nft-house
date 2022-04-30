@@ -3,14 +3,17 @@ pragma solidity ^0.7.6;
 
 import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 
 import {ERC721} from '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 
-contract NftHouse is ERC721 {
+contract NftHouse is ERC721, Ownable {
     using Address for address payable;
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdTracker;
+
+    uint256 private rentDuration = 30 days;
 
     struct HouseInfo {
         address owner;
@@ -37,6 +40,10 @@ contract NftHouse is ERC721 {
     );
 
     event PayRent(address indexed renter, uint256 indexed tokenId, uint256 paymentDay, uint256 rentPrice);
+
+    event Sold(address indexed owner, uint256 indexed tokenId, uint256 sellingPrice);
+
+    event Bought(address indexed newOwner, address indexed prevOwner, uint256 indexed tokenId, uint256 buyPrice);
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
@@ -67,16 +74,20 @@ contract NftHouse is ERC721 {
         return _tokenIdTracker.current();
     }
 
+    function setRentingDuration(uint256 duration) external onlyOwner {
+        rentDuration = duration;
+    }
+
     function payRent(uint256 tokenId) external payable {
-        bool _isRenter = isRenter[_msgSender()].tokenId == tokenIdToHouse[tokenId].tokenId;
+        bool _isRenter = isRenter[_msgSender()].owner == tokenIdToHouse[tokenId].owner;
         require(
-            _isRenter || tokenIdToHouse[tokenId].numberOfRenters != tokenIdToHouse[tokenId].numberOfCurrentRenter,
+            _isRenter || tokenIdToHouse[tokenId].numberOfRenters > tokenIdToHouse[tokenId].numberOfCurrentRenter,
             'You are not a renter for this house'
         );
 
         require(tokenIdToHouse[tokenId].rentPrice == msg.value, 'You have to pay the same amount as the rent price');
 
-        require(lastTimePaid[_msgSender()] + 30 days < block.timestamp, 'You have already paid this month rent');
+        require(lastTimePaid[_msgSender()] + rentDuration < block.timestamp, 'You have already paid this month rent');
 
         payable(tokenIdToHouse[tokenId].owner).transfer(msg.value);
 
@@ -103,6 +114,8 @@ contract NftHouse is ERC721 {
 
         this.safeTransferFrom(tokenIdToHouse[tokenId].owner, _msgSender(), tokenId);
 
+        emit Bought(_msgSender(), tokenIdToHouse[tokenId].owner, tokenId, tokenIdToHouse[tokenId].sellingPrice);
+
         tokenIdToHouse[tokenId].owner = _msgSender();
         tokenIdToHouse[tokenId].sellingPrice = 0;
     }
@@ -110,6 +123,7 @@ contract NftHouse is ERC721 {
     function sell(uint256 tokenId, uint256 sellingPrice) external payable {
         require(tokenIdToHouse[tokenId].owner == _msgSender(), 'You are not the owner');
         tokenIdToHouse[tokenId].sellingPrice = sellingPrice;
+        Sold(_msgSender(), tokenId, sellingPrice);
     }
 
     function getHouseByTokenId(uint256 tokenId)
